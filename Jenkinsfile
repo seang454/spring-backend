@@ -47,7 +47,7 @@ pipeline {
         }
 
         // 3️⃣ Prepare Dockerfile
-        stage('Prepare Dockerfile') {
+        stage('Prepare Dockerfile from Shared Library') {
             steps {
                 script {
                     def sharedDockerfile = libraryResource 'springboot/dev.Dockerfile'
