@@ -21,7 +21,7 @@ pipeline {
         // 1️⃣ Clone Spring Boot Code
         stage('Clone Code') {
             steps {
-                git 'https://github.com/seang454/spring-share-libary.git'
+                git 'https://github.com/seang454/spring-backend'
             }
         }
 
