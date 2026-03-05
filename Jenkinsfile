@@ -129,86 +129,86 @@ pipeline {
         // 7️⃣ Update GitOps Repo — triggers Argo CD to deploy new image
         // ✅ Replaces old "Run PostgreSQL" + "Run Spring Boot" docker stages
         // Jenkins no longer manages containers directly — Argo CD + Helm does
-        stage('Update GitOps Repo') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'GITOPS-GITHUB-CREDENTIAL',  // 🔁 Add this in Jenkins credentials
-                    usernameVariable: 'GIT_USERNAME',
-                    passwordVariable: 'GIT_PASSWORD'
-                )]) {
-                    sh '''
-                    echo "📦 Cloning GitOps repo..."
-                    git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@${GITOPS_REPO} gitops-repo
-                    cd gitops-repo
+        // stage('Update GitOps Repo') {
+        //     steps {
+        //         withCredentials([usernamePassword(
+        //             credentialsId: 'GITOPS-GITHUB-CREDENTIAL',  // 🔁 Add this in Jenkins credentials
+        //             usernameVariable: 'GIT_USERNAME',
+        //             passwordVariable: 'GIT_PASSWORD'
+        //         )]) {
+        //             sh '''
+        //             echo "📦 Cloning GitOps repo..."
+        //             git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@${GITOPS_REPO} gitops-repo
+        //             cd gitops-repo
 
-                    echo "🔄 Updating Spring Boot image tag to: ${TAG}"
+        //             echo "🔄 Updating Spring Boot image tag to: ${TAG}"
 
-                    # Update the image tag in helm values file
-                    sed -i "s|tag:.*|tag: ${TAG}|" ${HELM_VALUES}
+        //             # Update the image tag in helm values file
+        //             sed -i "s|tag:.*|tag: ${TAG}|" ${HELM_VALUES}
 
-                    # Verify the update
-                    echo "=== Updated image tag ==="
-                    grep "tag:" ${HELM_VALUES}
+        //             # Verify the update
+        //             echo "=== Updated image tag ==="
+        //             grep "tag:" ${HELM_VALUES}
 
-                    # Commit and push
-                    git config user.email "jenkins-ci@mycompany.com"
-                    git config user.name "Jenkins CI"
-                    git add ${HELM_VALUES}
-                    git commit -m "ci: update spring image to ${TAG} [skip ci]"
-                    git push origin ${GITOPS_BRANCH}
+        //             # Commit and push
+        //             git config user.email "jenkins-ci@mycompany.com"
+        //             git config user.name "Jenkins CI"
+        //             git add ${HELM_VALUES}
+        //             git commit -m "ci: update spring image to ${TAG} [skip ci]"
+        //             git push origin ${GITOPS_BRANCH}
 
-                    echo "✅ GitOps repo updated — Argo CD will deploy shortly"
-                    '''
-                }
-            }
-        }
+        //             echo "✅ GitOps repo updated — Argo CD will deploy shortly"
+        //             '''
+        //         }
+        //     }
+        // }
 
-        // 8️⃣ Wait for Argo CD to Sync & Verify Deployment
-        // ✅ Argo CD handles deploying Spring Boot + PostgreSQL via Helm
-        stage('Verify Argo CD Deployment') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'ARGOCD-CREDENTIAL',    // 🔁 Add this in Jenkins credentials
-                    usernameVariable: 'ARGOCD_USERNAME',
-                    passwordVariable: 'ARGOCD_PASSWORD'
-                )]) {
-                    sh '''
-                    echo "⏳ Waiting for Argo CD to detect changes (30s)..."
-                    sleep 30
+        // // 8️⃣ Wait for Argo CD to Sync & Verify Deployment
+        // // ✅ Argo CD handles deploying Spring Boot + PostgreSQL via Helm
+        // stage('Verify Argo CD Deployment') {
+        //     steps {
+        //         withCredentials([usernamePassword(
+        //             credentialsId: 'ARGOCD-CREDENTIAL',    // 🔁 Add this in Jenkins credentials
+        //             usernameVariable: 'ARGOCD_USERNAME',
+        //             passwordVariable: 'ARGOCD_PASSWORD'
+        //         )]) {
+        //             sh '''
+        //             echo "⏳ Waiting for Argo CD to detect changes (30s)..."
+        //             sleep 30
 
-                    # Install argocd CLI if not available
-                    if ! command -v argocd > /dev/null 2>&1; then
-                        echo "Installing Argo CD CLI..."
-                        curl -sSL -o /usr/local/bin/argocd \
-                            https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-                        chmod +x /usr/local/bin/argocd
-                    fi
+        //             # Install argocd CLI if not available
+        //             if ! command -v argocd > /dev/null 2>&1; then
+        //                 echo "Installing Argo CD CLI..."
+        //                 curl -sSL -o /usr/local/bin/argocd \
+        //                     https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        //                 chmod +x /usr/local/bin/argocd
+        //             fi
 
-                    # Login to Argo CD
-                    argocd login ${ARGOCD_SERVER} \
-                        --username ${ARGOCD_USERNAME} \
-                        --password ${ARGOCD_PASSWORD} \
-                        --insecure
+        //             # Login to Argo CD
+        //             argocd login ${ARGOCD_SERVER} \
+        //                 --username ${ARGOCD_USERNAME} \
+        //                 --password ${ARGOCD_PASSWORD} \
+        //                 --insecure
 
-                    # Trigger sync
-                    echo "🔄 Triggering Argo CD sync for: ${ARGOCD_APP}"
-                    argocd app sync ${ARGOCD_APP}
+        //             # Trigger sync
+        //             echo "🔄 Triggering Argo CD sync for: ${ARGOCD_APP}"
+        //             argocd app sync ${ARGOCD_APP}
 
-                    # Wait for healthy deployment
-                    echo "⏳ Waiting for Spring Boot to be healthy..."
-                    argocd app wait ${ARGOCD_APP} \
-                        --sync \
-                        --health \
-                        --timeout 180
+        //             # Wait for healthy deployment
+        //             echo "⏳ Waiting for Spring Boot to be healthy..."
+        //             argocd app wait ${ARGOCD_APP} \
+        //                 --sync \
+        //                 --health \
+        //                 --timeout 180
 
-                    # Show final status
-                    argocd app get ${ARGOCD_APP}
+        //             # Show final status
+        //             argocd app get ${ARGOCD_APP}
 
-                    echo "✅ Deployment verified — ${IMAGE_NAME}:${TAG} is live!"
-                    '''
-                }
-            }
-        }
+        //             echo "✅ Deployment verified — ${IMAGE_NAME}:${TAG} is live!"
+        //             '''
+        //         }
+        //     }
+        // }
     }
 
     post {
