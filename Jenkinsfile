@@ -26,17 +26,39 @@ pipeline {
         }
 
         // 2️⃣ Build & Test with H2 (no need for Postgres)
+        // stage('Build & Test with H2') {
+        //     steps {
+        //         script {
+        //             if (fileExists('pom.xml')) {
+        //                 // Maven
+        //                 withEnv(['SPRING_PROFILES_ACTIVE=test']) {
+        //                     sh 'mvn clean test'
+        //                 }
+        //             } else if (fileExists('build.gradle')) {
+        //                 // Gradle
+        //                 withEnv(['SPRING_PROFILES_ACTIVE=test']) {
+        //                     sh 'chmod +x gradlew && ./gradlew clean test'
+        //                 }
+        //             } else {
+        //                 error "No build file found"
+        //             }
+        //         }
+        //     }
+        // }
+
         stage('Build & Test with H2') {
             steps {
                 script {
                     if (fileExists('pom.xml')) {
-                        // Maven
                         withEnv(['SPRING_PROFILES_ACTIVE=test']) {
                             sh 'mvn clean test'
                         }
                     } else if (fileExists('build.gradle')) {
-                        // Gradle
-                        withEnv(['SPRING_PROFILES_ACTIVE=test']) {
+                        // ✅ Force Gradle to use the real JDK
+                        withEnv([
+                            'SPRING_PROFILES_ACTIVE=test',
+                            'JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64'
+                        ]) {
                             sh 'chmod +x gradlew && ./gradlew clean test'
                         }
                     } else {
