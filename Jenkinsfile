@@ -129,39 +129,39 @@ pipeline {
         // 7️⃣ Update GitOps Repo — triggers Argo CD to deploy new image
         // ✅ Replaces old "Run PostgreSQL" + "Run Spring Boot" docker stages
         // Jenkins no longer manages containers directly — Argo CD + Helm does
-        // stage('Update GitOps Repo') {
-        //     steps {
-        //         withCredentials([usernamePassword(
-        //             credentialsId: 'GITOPS-GITHUB-CREDENTIAL',  // 🔁 Add this in Jenkins credentials
-        //             usernameVariable: 'GIT_USERNAME',
-        //             passwordVariable: 'GIT_PASSWORD'
-        //         )]) {
-        //             sh '''
-        //             echo "📦 Cloning GitOps repo..."
-        //             git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@${GITOPS_REPO} gitops-repo
-        //             cd gitops-repo
+        stage('Update GitOps Repo') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'GITOPS-GITHUB-CREDENTIAL',  // 🔁 Add this in Jenkins credentials
+                    usernameVariable: 'GIT_USERNAME',
+                    passwordVariable: 'GIT_PASSWORD'
+                )]) {
+                    sh '''
+                    echo "📦 Cloning GitOps repo..."
+                    git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@${GITOPS_REPO} gitops-repo
+                    cd gitops-repo
 
-        //             echo "🔄 Updating Spring Boot image tag to: ${TAG}"
+                    echo "🔄 Updating Spring Boot image tag to: ${TAG}"
 
-        //             # Update the image tag in helm values file
-        //             sed -i "s|tag:.*|tag: ${TAG}|" ${HELM_VALUES}
+                    # Update the image tag in helm values file
+                    sed -i "s|tag:.*|tag: ${TAG}|" ${HELM_VALUES}
 
-        //             # Verify the update
-        //             echo "=== Updated image tag ==="
-        //             grep "tag:" ${HELM_VALUES}
+                    # Verify the update
+                    echo "=== Updated image tag ==="
+                    grep "tag:" ${HELM_VALUES}
 
-        //             # Commit and push
-        //             git config user.email "jenkins-ci@mycompany.com"
-        //             git config user.name "Jenkins CI"
-        //             git add ${HELM_VALUES}
-        //             git commit -m "ci: update spring image to ${TAG} [skip ci]"
-        //             git push origin ${GITOPS_BRANCH}
+                    # Commit and push
+                    git config user.email "pengseangsim210@gmail.com"
+                    git config user.name "seang454"
+                    git add ${HELM_VALUES}
+                    git commit -m "ci: update spring image to ${TAG} [skip ci]"
+                    git push origin ${GITOPS_BRANCH}
 
-        //             echo "✅ GitOps repo updated — Argo CD will deploy shortly"
-        //             '''
-        //         }
-        //     }
-        // }
+                    echo "✅ GitOps repo updated — Argo CD will deploy shortly"
+                    '''
+                }
+            }
+        }
 
         // // 8️⃣ Wait for Argo CD to Sync & Verify Deployment
         // // ✅ Argo CD handles deploying Spring Boot + PostgreSQL via Helm
